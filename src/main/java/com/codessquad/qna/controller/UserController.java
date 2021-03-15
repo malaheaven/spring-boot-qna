@@ -3,12 +3,14 @@ package com.codessquad.qna.controller;
 import com.codessquad.qna.domain.User;
 import com.codessquad.qna.repository.UserRepository;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
+
+import javax.servlet.http.HttpSession;
+
 
 @Controller
 @RequestMapping("/users")
@@ -19,6 +21,25 @@ public class UserController {
 
     public UserController(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    @PostMapping("/login")
+    public String login(String userId, String password, HttpSession session){
+        User user = userRepository.findByUserId(userId);
+
+        if (user == null){
+            logger.debug("Login Failure!");
+            return "redirect:/users/loginForm";
+        }
+
+        if(!user.isMatchingPassword(password)){
+            logger.debug("Login Failure!");
+            return "redirect:/users/loginForm";
+        }
+        logger.debug("Login Success!");
+        session.setAttribute("user",user);
+
+        return "redirect:/";
     }
 
     @PostMapping
@@ -55,7 +76,7 @@ public class UserController {
         if (!user.isMatchingPassword(checkPassword))
             return "redirect:/users/{id}/form";
 
-        if (updateUserInfo.getPassword() == "")
+        if (updateUserInfo.getPassword() == "" || updateUserInfo.getPassword() == " ")
             updateUserInfo.setPassword(user.getPassword());
 
         user.update(updateUserInfo);
