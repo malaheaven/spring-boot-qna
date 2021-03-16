@@ -24,27 +24,27 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public String login(String userId, String password, HttpSession session){
+    public String login(String userId, String password, HttpSession session) {
         User user = userRepository.findByUserId(userId);
 
-        if (user == null){
+        if (user == null) {
             logger.debug("Login Failure!");
             return "redirect:/users/loginForm";
         }
 
-        if(!user.isMatchingPassword(password)){
+        if (!user.isMatchingPassword(password)) {
             logger.debug("Login Failure!");
             return "redirect:/users/loginForm";
         }
         logger.debug("Login Success!");
-        session.setAttribute("user",user);
+        session.setAttribute("sessionedUser", user);
 
         return "redirect:/";
     }
 
     @GetMapping("/logout")
-    public String logout(HttpSession session){
-        session.removeAttribute("user");
+    public String logout(HttpSession session) {
+        session.removeAttribute("sessionedUser");
         return "redirect:/";
     }
 
@@ -63,6 +63,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public String profile(@PathVariable("id") Long id, Model model) {
+
         User user = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("No such data"));
         model.addAttribute("user", user);
         return "users/profile";
@@ -70,14 +71,34 @@ public class UserController {
 
 
     @GetMapping("/{id}/form")
-    public String updateForm(@PathVariable("id") Long id, Model model) {
+    public String updateForm(@PathVariable("id") Long id, Model model, HttpSession session) {
+        Object tempUser = session.getAttribute("sessionedUser");
+        if (tempUser == null) {
+            return "redirect:/users/loginForm";
+        }
+
+        User sessionedUser = (User) tempUser;
+        if (!id.equals(sessionedUser.getId())) {
+            throw new IllegalArgumentException("you can't update the another user");
+        }
+
         User user = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("No such data"));
         model.addAttribute("user", user);
         return "users/updateForm";
     }
 
     @PutMapping("/{id}")
-    public String update(@PathVariable("id") Long id, String checkPassword, User updateUserInfo, Model model) {
+    public String update(@PathVariable("id") Long id, String checkPassword, User updateUserInfo, HttpSession session) {
+        Object tempUser = session.getAttribute("sessionedUser");
+        if (tempUser == null) {
+            return "redirect:/users/loginForm";
+        }
+
+        User sessionedUser = (User) tempUser;
+        if (!id.equals(sessionedUser.getId())) {
+            throw new IllegalArgumentException("you can't update the another user");
+        }
+
         User user = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("No such data"));
         if (!user.isMatchingPassword(checkPassword))
             return "redirect:/users/{id}/form";
