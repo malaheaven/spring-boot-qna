@@ -2,6 +2,7 @@ package com.codessquad.qna.controller;
 
 import com.codessquad.qna.domain.User;
 import com.codessquad.qna.repository.UserRepository;
+import com.codessquad.qna.utils.HttpSessionUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,14 +38,14 @@ public class UserController {
             return "redirect:/users/loginForm";
         }
         logger.debug("Login Success!");
-        session.setAttribute("sessionedUser", user);
+        session.setAttribute(HttpSessionUtils.USER_SESSION_KEY, user);
 
         return "redirect:/";
     }
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
-        session.removeAttribute("sessionedUser");
+        session.removeAttribute(HttpSessionUtils.USER_SESSION_KEY);
         return "redirect:/";
     }
 
@@ -63,7 +64,6 @@ public class UserController {
 
     @GetMapping("/{id}")
     public String profile(@PathVariable("id") Long id, Model model) {
-
         User user = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("No such data"));
         model.addAttribute("user", user);
         return "users/profile";
@@ -72,13 +72,12 @@ public class UserController {
 
     @GetMapping("/{id}/form")
     public String updateForm(@PathVariable("id") Long id, Model model, HttpSession session) {
-        Object tempUser = session.getAttribute("sessionedUser");
-        if (tempUser == null) {
+        if (HttpSessionUtils.isLoginUser(session)) {
             return "redirect:/users/loginForm";
         }
 
-        User sessionedUser = (User) tempUser;
-        if (!id.equals(sessionedUser.getId())) {
+        User sessionedUser = HttpSessionUtils.getUserFromSession(session);
+        if (!sessionedUser.isMatchingId(id)) {
             throw new IllegalArgumentException("you can't update the another user");
         }
 
@@ -89,13 +88,12 @@ public class UserController {
 
     @PutMapping("/{id}")
     public String update(@PathVariable("id") Long id, String checkPassword, User updateUserInfo, HttpSession session) {
-        Object tempUser = session.getAttribute("sessionedUser");
-        if (tempUser == null) {
+        if (HttpSessionUtils.isLoginUser(session)) {
             return "redirect:/users/loginForm";
         }
 
-        User sessionedUser = (User) tempUser;
-        if (!id.equals(sessionedUser.getId())) {
+        User sessionedUser = HttpSessionUtils.getUserFromSession(session);
+        if (!sessionedUser.isMatchingId(id)) {
             throw new IllegalArgumentException("you can't update the another user");
         }
 

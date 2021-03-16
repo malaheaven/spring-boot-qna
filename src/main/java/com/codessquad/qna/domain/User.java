@@ -50,7 +50,17 @@ public class User {
     }
 
     public boolean isMatchingPassword(String password) {
+        if (password == null) {
+            return false;
+        }
         return password.equals(this.password);
+    }
+
+    public boolean isMatchingId(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return id.equals(this.id);
     }
 
     public void update(User updateUserInfo) {
